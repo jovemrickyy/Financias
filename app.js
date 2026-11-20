@@ -43,7 +43,7 @@ $$("#tabbar button").forEach(b=>b.onclick=()=>{
   $$("#tabbar button").forEach(x=>x.classList.toggle("active",x===b));
   $$(".tab").forEach(t=>t.classList.toggle("active",t.id==="tab-"+b.dataset.tab));
   moveThumb(); window.scrollTo({top:0,behavior:"smooth"});
-  if(b.dataset.tab==="map"){initMap();setTimeout(()=>map.invalidateSize(),100)}
+  if(b.dataset.tab==="map"){initMap();$("#roundSeg")._place&&$("#roundSeg")._place();setTimeout(()=>map.invalidateSize(),100)}
 });
 window.addEventListener("load",()=>setTimeout(moveThumb,50));
 window.addEventListener("resize",moveThumb);
@@ -200,15 +200,27 @@ async function drawRoute(){
   }
   calc();
 }
+let round=false;
 function calc(){
   cfg.kml=parseFloat($("#kml").value)||cfg.kml; cfg.price=parseFloat($("#fuelPrice").value)||cfg.price;
-  const l=cfg.kml>0?distKm/cfg.kml:0, cost=l*cfg.price;
-  $("#tKm").textContent=distKm.toFixed(1).replace(".",",")+" km";
-  $("#tL").textContent=l.toFixed(1).replace(".",",")+" L";
-  $("#tCost").textContent=brl(cost); save(); return cost;
+  cfg.times=Math.max(1,parseInt($("#times").value)||cfg.times||22);
+  const km=distKm*(round?2:1);
+  const l=cfg.kml>0?km/cfg.kml:0, cost=l*cfg.price;
+  const n=v=>v.toFixed(1).replace(".",",");
+  $("#tKm").textContent=n(km)+" km";
+  $("#tL").textContent=n(l)+" L";
+  $("#tCost").textContent=brl(cost);
+  $("#mCost").textContent=brl(cost*cfg.times);
+  $("#mInfo").textContent=`${n(km*cfg.times)} km • ${n(l*cfg.times)} L • ${cfg.times}x ${round?"ida e volta":"só ida"}`;
+  save(); return cost;
 }
-$("#kml").value=cfg.kml; $("#fuelPrice").value=cfg.price;
-$("#kml").oninput=$("#fuelPrice").oninput=calc;
+function setRound(r){
+  round=!!r; $$("#roundSeg button").forEach(b=>b.classList.toggle("on",(b.dataset.r==="1")===round));
+  $("#roundSeg")._place&&$("#roundSeg")._place(); calc();
+}
+$("#kml").value=cfg.kml; $("#fuelPrice").value=cfg.price; $("#times").value=cfg.times||22;
+$("#kml").oninput=$("#fuelPrice").oninput=$("#times").oninput=calc;
+seg($("#roundSeg"),b=>{round=b.dataset.r==="1";calc()});
 $("#undo").onclick=()=>{if(pts.length){pts.pop();drawRoute()}};
 $("#clearPts").onclick=()=>{pts=[];drawRoute();island("Rota limpa")};
 $("#locate").onclick=()=>{
@@ -229,17 +241,20 @@ $("#searchBtn").onclick=doSearch;
 $("#search").onkeydown=e=>{if(e.key==="Enter")doSearch()};
 $("#saveTrip").onclick=()=>{
   if(pts.length<2){island("Adicione 2+ pontos");vibrate([30,40,30]);return}
-  const cost=calc(), name=$("#tripName").value.trim()||`${pts[0].name} → ${pts[pts.length-1].name}`;
-  trips.unshift({id:Date.now(),name,km:distKm,cost,date:today(),pts:pts.map(p=>({...p}))});
+  const cost=calc(), name=($("#tripName").value.trim()||`${pts[0].name} → ${pts[pts.length-1].name}`)+(round?" (ida e volta)":"");
+  trips.unshift({id:Date.now(),name,km:distKm*(round?2:1),cost,round,times:cfg.times,date:today(),pts:pts.map(p=>({...p}))});
   tx.push({id:Date.now()+1,type:"out",value:+cost.toFixed(2),desc:"⛽ "+name,cat:"Combustível",date:today()});
   save(); vibrate(25); island("Gasolina "+brl(cost)+" lançada","out");
   pts=[];$("#tripName").value="";drawRoute();render();
 };
 function renderTrips(){
-  $("#trips").innerHTML=trips.length?trips.map((t,i)=>`<div class="item" data-trip="${t.id}" style="animation-delay:${i*40}ms"><div class="ico">🛣️</div><div class="info"><b>${esc(t.name)}</b><small>${t.km.toFixed(1).replace(".",",")} km • ${t.date.split("-").reverse().slice(0,2).join("/")}</small></div><div class="val out">${brl(t.cost)}</div></div>`).join(""):`<div class="empty">Nenhuma viagem ainda</div>`;
+  const monthly=trips.reduce((a,t)=>a+t.cost*(t.times||1),0);
+  $("#tripsTotal").innerHTML=trips.length?`<div class="month-box small"><small>Total previsto no mês (todas as rotas)</small><b>${brl(monthly)}</b></div>`:"";
+  $("#trips").innerHTML=trips.length?trips.map((t,i)=>`<div class="item" data-trip="${t.id}" style="animation-delay:${i*40}ms"><div class="ico">${t.round?"🔁":"🛣️"}</div><div class="info"><b>${esc(t.name)}</b><small>${t.km.toFixed(1).replace(".",",")} km • ${t.times||1}x/mês → ${brl(t.cost*(t.times||1))}</small></div><div class="val out">${brl(t.cost)}</div></div>`).join(""):`<div class="empty">Nenhuma viagem ainda</div>`;
   $$("[data-trip]").forEach(el=>el.onclick=()=>{
     const t=trips.find(x=>x.id==el.dataset.trip); if(!t||!confirm("Carregar esta rota no mapa?"))return;
-    initMap(); pts=t.pts.map(p=>({...p})); drawRoute(); window.scrollTo({top:0,behavior:"smooth"});
+    initMap(); cfg.times=t.times||cfg.times; $("#times").value=cfg.times; setRound(t.round);
+    pts=t.pts.map(p=>({...p})); drawRoute(); window.scrollTo({top:0,behavior:"smooth"});
   });
 }
 

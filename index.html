@@ -86,20 +86,31 @@
     </div>
     <p class="hint">Toque no mapa para adicionar paradas. A rota é calculada automaticamente.</p>
     <div class="card pop">
+      <div class="seg" id="roundSeg">
+        <button class="on" data-r="0">Só ida</button>
+        <button data-r="1">Ida e volta</button>
+        <span class="seg-thumb"></span>
+      </div>
       <div class="grid2">
         <label>Consumo (km/l)<input id="kml" type="number" inputmode="decimal" step="0.1"></label>
         <label>Preço litro (R$)<input id="fuelPrice" type="number" inputmode="decimal" step="0.01"></label>
+      </div>
+      <div class="grid2">
+        <label>Vezes por mês<input id="times" type="number" inputmode="numeric" min="1" max="31" step="1"></label>
+        <label class="note">Ex.: 22 = dias úteis. Cada vez conta como uma ida (ou ida e volta).</label>
       </div>
       <div class="trip-stats">
         <div><small>Distância</small><b id="tKm">0 km</b></div>
         <div><small>Litros</small><b id="tL">0 L</b></div>
         <div><small>Custo</small><b id="tCost" class="purple">R$ 0,00</b></div>
       </div>
+      <div class="month-box"><small>Previsão de gasolina no mês</small><b id="mCost">R$ 0,00</b><span id="mInfo">0 km • 0 L</span></div>
       <input id="tripName" placeholder="Nome da viagem (ex: Trabalho)">
       <button id="saveTrip" class="primary">Salvar e lançar gasolina</button>
     </div>
     <div class="card pop">
       <h3>Viagens salvas</h3>
+      <div id="tripsTotal"></div>
       <div id="trips" class="list"></div>
     </div>
   </section>
