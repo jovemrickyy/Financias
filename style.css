@@ -141,3 +141,21 @@ label{font-size:12px;color:var(--muted);font-weight:600}
 .money:focus{box-shadow:none}
 #sheet select{background-image:linear-gradient(45deg,transparent 50%,var(--p1) 50%),linear-gradient(135deg,var(--p1) 50%,transparent 50%);background-position:calc(100% - 22px) 22px,calc(100% - 16px) 22px;background-size:6px 6px;background-repeat:no-repeat}
 input[type=date]{color-scheme:dark}
+
+/* ---------- Mapa escuro (sem chave de API) ---------- */
+.osm-dark{filter:invert(1) hue-rotate(250deg) saturate(.7) brightness(.9) contrast(.95)}
+
+/* ---------- Gráfico ---------- */
+.chart-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.chart-head h3{margin:0}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend .d{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend .d.in{background:#34d399}.legend .d.out{background:#9d5cff}
+.chart-svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-svg rect{transform-box:fill-box;transform-origin:bottom;animation:grow .9s var(--spring) both}
+.chart-svg g:nth-of-type(2) rect{animation-delay:.07s}.chart-svg g:nth-of-type(3) rect{animation-delay:.14s}.chart-svg g:nth-of-type(4) rect{animation-delay:.21s}.chart-svg g:nth-of-type(5) rect{animation-delay:.28s}.chart-svg g:nth-of-type(6) rect{animation-delay:.35s}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.cv{font-size:8.5px;font-weight:700;text-anchor:middle}
+.cl{font-size:10px;fill:var(--muted);text-anchor:middle;text-transform:capitalize}
+.cl.cur{fill:#fff;font-weight:700}

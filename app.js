@@ -86,7 +86,29 @@ function render(){
   $("#cats").innerHTML=ents.length?ents.map(([c,v])=>`<div class="cat"><div class="cat-h"><span>${CATS.out[c]||"📦"} ${c}</span><span>${brl(v)}</span></div><div class="bar"><i data-w="${(v/tout*100).toFixed(1)}"></i></div></div>`).join(""):`<div class="empty">Sem gastos neste mês</div>`;
   requestAnimationFrame(()=>requestAnimationFrame(()=>$$(".bar i").forEach(b=>b.style.width=b.dataset.w+"%")));
   $("#recent").innerHTML=m.length?m.slice(0,5).map(itemHTML).join(""):`<div class="empty">Toque em + para lançar</div>`;
-  renderList(); renderTrips(); bindItems();
+  renderChart(); renderList(); renderTrips(); bindItems();
+}
+function renderChart(){
+  const months=[];
+  for(let i=5;i>=0;i--){const d=new Date(cur.getFullYear(),cur.getMonth()-i,1);months.push({k:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`,l:d.toLocaleDateString("pt-BR",{month:"short"}).replace(".",""),i:0,o:0})}
+  tx.forEach(t=>{const m=months.find(x=>x.k===mkey(t.date));if(m){if(t.type==="in")m.i+=t.value;else m.o+=t.value}});
+  const max=Math.max(...months.map(m=>Math.max(m.i,m.o)),1);
+  const W=340,H=190,top=22,bot=26,ch=H-top-bot,slot=W/6,bw=15;
+  const short=v=>v>=1000?(v/1000).toFixed(v>=10000?0:1).replace(".",",")+"k":Math.round(v);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="chart-svg"><defs><linearGradient id="gi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ee7b7"/><stop offset="1" stop-color="#059669"/></linearGradient><linearGradient id="go" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4a1ff"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>`;
+  for(let g=0;g<=3;g++){const y=top+ch-ch*g/3;s+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="#241b38" stroke-dasharray="3 5"/>`}
+  months.forEach((m,n)=>{
+    const cx=slot*n+slot/2, hi=m.i/max*ch, ho=m.o/max*ch, isCur=n===5;
+    s+=`<g class="bargrp" style="animation-delay:${n*70}ms">`;
+    s+=`<rect class="bar-in" x="${cx-bw-1.5}" y="${top+ch-hi}" width="${bw}" height="${Math.max(hi,m.i?3:0)}" rx="5" fill="url(#gi)"/>`;
+    s+=`<rect class="bar-out" x="${cx+1.5}" y="${top+ch-ho}" width="${bw}" height="${Math.max(ho,m.o?3:0)}" rx="5" fill="url(#go)"/>`;
+    s+=`</g>`;
+    if(m.i)s+=`<text x="${cx-bw/2-1.5}" y="${top+ch-hi-5}" class="cv" fill="#6ee7b7">${short(m.i)}</text>`;
+    if(m.o)s+=`<text x="${cx+bw/2+1.5}" y="${top+ch-ho-5}" class="cv" fill="#c4a1ff">${short(m.o)}</text>`;
+    s+=`<text x="${cx}" y="${H-8}" class="cl${isCur?" cur":""}">${m.l}</text>`;
+  });
+  s+=`</svg>`;
+  $("#chart").innerHTML=s;
 }
 function renderList(){
   const k=curKey();
@@ -136,7 +158,13 @@ let map,pts=[],markers=[],line=null,distKm=0,routeToken=0;
 function initMap(){
   if(map||!window.L)return;
   map=L.map("map",{zoomControl:true}).setView([-23.55,-46.63],12);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:"© OpenStreetMap © CARTO"}).addTo(map);
+  // Mapa gratuito, SEM chave de API (OpenStreetMap), escurecido por CSS. Se falhar, troca para outro servidor.
+  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,className:"osm-dark",attribution:"© OpenStreetMap"}).addTo(map);
+  let fell=false,errs=0;
+  osm.on("tileerror",()=>{
+    if(fell||++errs<3)return; fell=true; map.removeLayer(osm);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:"© OpenStreetMap © CARTO"}).addTo(map);
+  });
   map.on("click",e=>addPoint(e.latlng.lat,e.latlng.lng));
   navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude,p.coords.longitude],13),()=>{});
 }
