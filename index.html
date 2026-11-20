@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Violet Finance</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Ilha dinâmica -->
+<div id="island"><div class="isl-dot"></div><span id="islText"></span></div>
+
+<!-- Splash -->
+<div id="splash">
+  <div class="orb"></div>
+  <div class="logo"><svg viewBox="0 0 64 64" width="64" height="64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4a1ff"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><circle cx="32" cy="32" r="28" fill="none" stroke="url(#g)" stroke-width="4" class="ring"/><path d="M20 38l8-8 7 6 10-13" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" class="line"/></svg></div>
+  <h1 class="splash-title">Violet<span>Finance</span></h1>
+  <p class="splash-sub">controle total do seu dinheiro</p>
+</div>
+
+<main id="app">
+  <!-- INÍCIO -->
+  <section id="tab-home" class="tab active">
+    <header class="top">
+      <div class="month-nav">
+        <button class="icon-btn" id="prevM">‹</button>
+        <h2 id="monthLabel"></h2>
+        <button class="icon-btn" id="nextM">›</button>
+      </div>
+    </header>
+    <div class="balance-card pop">
+      <span class="lbl">Saldo do mês</span>
+      <h1 id="balance">R$ 0,00</h1>
+      <div class="row">
+        <div class="chip in"><i>↓</i><div><small>Entradas</small><b id="totIn">R$ 0,00</b></div></div>
+        <div class="chip out"><i>↑</i><div><small>Saídas</small><b id="totOut">R$ 0,00</b></div></div>
+      </div>
+    </div>
+    <div class="card pop">
+      <h3>Gastos por categoria</h3>
+      <div id="cats"></div>
+    </div>
+    <div class="card pop">
+      <h3>Últimos lançamentos</h3>
+      <div id="recent" class="list"></div>
+    </div>
+  </section>
+
+  <!-- EXTRATO -->
+  <section id="tab-list" class="tab">
+    <header class="top"><h2 class="big">Extrato</h2></header>
+    <div class="seg" id="filterSeg">
+      <button class="on" data-f="all">Tudo</button>
+      <button data-f="in">Entradas</button>
+      <button data-f="out">Saídas</button>
+      <span class="seg-thumb"></span>
+    </div>
+    <div id="allList" class="list card pop"></div>
+  </section>
+
+  <!-- MAPA -->
+  <section id="tab-map" class="tab">
+    <header class="top"><h2 class="big">Rotas e gasolina</h2></header>
+    <div class="searchbar">
+      <input id="search" placeholder="Buscar lugar e adicionar…" autocomplete="off">
+      <button id="searchBtn" class="icon-btn solid">⌕</button>
+    </div>
+    <div id="map"></div>
+    <div class="map-tools">
+      <button id="locate" class="pill">📍 Minha posição</button>
+      <button id="undo" class="pill">↶ Desfazer</button>
+      <button id="clearPts" class="pill">✕ Limpar</button>
+    </div>
+    <p class="hint">Toque no mapa para adicionar paradas. A rota é calculada automaticamente.</p>
+    <div class="card pop">
+      <div class="grid2">
+        <label>Consumo (km/l)<input id="kml" type="number" inputmode="decimal" step="0.1"></label>
+        <label>Preço litro (R$)<input id="fuelPrice" type="number" inputmode="decimal" step="0.01"></label>
+      </div>
+      <div class="trip-stats">
+        <div><small>Distância</small><b id="tKm">0 km</b></div>
+        <div><small>Litros</small><b id="tL">0 L</b></div>
+        <div><small>Custo</small><b id="tCost" class="purple">R$ 0,00</b></div>
+      </div>
+      <input id="tripName" placeholder="Nome da viagem (ex: Trabalho)">
+      <button id="saveTrip" class="primary">Salvar e lançar gasolina</button>
+    </div>
+    <div class="card pop">
+      <h3>Viagens salvas</h3>
+      <div id="trips" class="list"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Botão flutuante -->
+<button id="fab" aria-label="Adicionar">+</button>
+
+<!-- Barra inferior -->
+<nav id="tabbar">
+  <button class="active" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg><span>Início</span></button>
+  <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Extrato</span></button>
+  <button data-tab="map"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></button>
+  <span class="tab-thumb"></span>
+</nav>
+
+<!-- Folha de lançamento -->
+<div id="backdrop"></div>
+<div id="sheet">
+  <div class="grab"></div>
+  <h3 id="sheetTitle">Novo lançamento</h3>
+  <div class="seg" id="typeSeg">
+    <button class="on" data-t="out">Saída</button>
+    <button data-t="in">Entrada</button>
+    <span class="seg-thumb"></span>
+  </div>
+  <input id="fValue" type="number" inputmode="decimal" step="0.01" placeholder="R$ 0,00" class="money">
+  <input id="fDesc" placeholder="Descrição">
+  <select id="fCat"></select>
+  <input id="fDate" type="date">
+  <button id="fSave" class="primary">Salvar</button>
+  <button id="fDel" class="danger hidden">Excluir</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
